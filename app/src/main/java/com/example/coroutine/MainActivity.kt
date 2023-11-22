@@ -1,5 +1,6 @@
 package com.example.coroutine
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -23,6 +24,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater);
         setContentView(binding.root);
+
+        binding.text.setOnClickListener { startActivity(Intent(this, MainActivity2::class.java)); };
 
         // IO의 경우 대기시간이 있는 네트워크 입출력 등의 작업에 적합
         // IO Dispathcher는 필요에 따라 추가적으로 스레드를 더 생성하거나 줄일 수 있으며 최대 64개까지 생성이 가능
