@@ -6,11 +6,13 @@ import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import com.example.coroutine.databinding.ActivityMain2Binding
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.system.measureTimeMillis
 import kotlin.time.measureTime
 
@@ -35,7 +37,6 @@ class MainActivity2 : AppCompatActivity() {
 //            }
 //            Log.d(TAG, "$time ms. ") // 6초
 //        };
-
 
 
 //        GlobalScope.launch(Dispatchers.IO) {
@@ -90,14 +91,14 @@ class MainActivity2 : AppCompatActivity() {
 
         binding.btnClick.setOnClickListener {
             lifecycleScope.launch {
-                while (true){ //button눌린게 true면 still running로그 반복 프린트
+                while (true) { //button눌린게 true면 still running로그 반복 프린트
                     delay(1000L); //1초 간격으로 printing
-                    Log.d(TAG,"Still running");
+                    Log.d(TAG, "Still running");
                 };
             };
             GlobalScope.launch {
                 delay(5000L) //5초후 intent시작
-                Intent(this@MainActivity2, MainActivity::class.java).also{
+                Intent(this@MainActivity2, MainActivity::class.java).also {
                     startActivity(it);
                     finish();
                 };
@@ -114,6 +115,63 @@ class MainActivity2 : AppCompatActivity() {
     suspend fun networkCall2(): String {
         delay(3000L);
         return "Answer 2";
+    };
+
+    fun test() {
+        val exceptionHandler = CoroutineExceptionHandler { _, exception ->
+            println("Caught $exception"); // 예외처리
+        };
+
+        val job = GlobalScope.launch(exceptionHandler) {
+            launch { // 새로운 코루틴을 하나 더 시작
+                delay(100);
+                throw ArithmeticException("Divide by zero"); // ArithmeticException 발생
+            };
+        };
+
+        runBlocking {
+            job.join(); // job 코루틴이 완료될 때까지 기다림
+        };
+        // CoroutineExceptionHandler에 의해 처리되어 해당 예외가 발생했음을 알려주고, "Caught" 메시지와 함께 예외 내용이 출력
+        // 이후 runBlocking 블록에서 job.join()을 통해 외부 코루틴이 종료
+    };
+
+    suspend fun doTask1(): Int {
+        delay(1000);
+        return 42;
+    };
+
+    suspend fun doTask2(): String {
+        delay(1500);
+        return "Task completed";
+    };
+
+    fun test2() = runBlocking {
+        val deferred1 = async { doTask1() };
+        val deferred2 = async { doTask2() };
+
+        // async 함수를 사용하여 두 가지 다른 작업(doTask1 및 doTask2)을 동시에 시작
+        // 각각의 작업은 Deferred를 반환
+        // Deferred는 비동기 계산의 결과
+        // await를 사용하여 결과를 기다릴 수 있음
+
+        println("Result 1: ${deferred1.await()}");
+        println("Result 2: ${deferred2.await()}")  ;
+    };
+
+    fun test3() {
+        val job = GlobalScope.launch(Dispatchers.Default) {
+            println("Coroutine running on ${Thread.currentThread().name}");
+        };
+
+        runBlocking {
+            job.join();
+            // runBlocking 블록 내에서 job.join()이 호출되어 해당 코루틴 job이 완료될 때까지 메인 스레드가 차단
+            // join()은 해당 코루틴이 완료될 때까지 대기하고, 여기서는 해당 코루틴이 지정된 Dispatchers.Default에서 실행된 후에 완료
+        };
+
+        // 결과적으로 runBlocking 블록 내에서 job.join()이 실행되면 메인 스레드가 해당 코루틴이 완료될 때까지 대기
+        // 해당 코루틴은 백그라운드의 디폴트 디스패처에서 실행되며, 이 디스패처에 할당된 스레드에서 동작
     };
 };
 
