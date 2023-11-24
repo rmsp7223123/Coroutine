@@ -11,6 +11,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlin.system.measureTimeMillis
@@ -172,6 +176,44 @@ class MainActivity2 : AppCompatActivity() {
 
         // 결과적으로 runBlocking 블록 내에서 job.join()이 실행되면 메인 스레드가 해당 코루틴이 완료될 때까지 대기
         // 해당 코루틴은 백그라운드의 디폴트 디스패처에서 실행되며, 이 디스패처에 할당된 스레드에서 동작
+    };
+
+    fun simpleFlow(): Flow<Int> = flow {
+        // Flow는 Kotlin의 코루틴을 기반으로 하는 비동기적인 스트림 처리를 지원하는 라이브러리
+        for (i in 1..5) {
+            kotlinx.coroutines.delay(1000); // 1초마다 값 발생
+            emit(i); // 값을 방출
+        };
+    };
+
+    fun main() = runBlocking<Unit> {
+        val flow = simpleFlow();
+
+        launch {
+            flow.collect { value -> //  Flow에서 값을 수집
+                println(value); // 수집된 값 출력
+            };
+        };
+
+        println("Collecting values...");
+    };
+
+    fun simpleFlow2(): Flow<Int> = flow {
+        for (i in 1..5) {
+            kotlinx.coroutines.delay(1000);
+            emit(i);
+        };
+    };
+
+    fun main2() = runBlocking<Unit> {
+        val flow = simpleFlow();
+
+        // flow.map, flow.filter 등의 연산자를 사용하여 Flow에서 값을 변형하고 조작
+        flow.map { it * 2 } // 각 값에 * 2 연산
+            .filter { it % 3 == 0 } // 3의 배수인 값만 필터링
+            .collect { value ->
+                println(value);
+            };
     };
 };
 
