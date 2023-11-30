@@ -7,9 +7,11 @@ import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import com.example.coroutine.databinding.ActivityMain2Binding
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 import kotlin.system.measureTimeMillis
 import kotlin.time.measureTime
 
@@ -214,6 +217,41 @@ class MainActivity2 : AppCompatActivity() {
             .collect { value ->
                 println(value);
             };
+    };
+
+    suspend fun performTask(taskName: String): Int {
+        delay(1000);
+        println("$taskName 완료");
+        return taskName.length;
+    };
+
+    fun main3() = runBlocking {
+        val job = launch {
+            val result = supervisorScope {
+                val deferredList = mutableListOf<Deferred<Int>>();
+
+                for (i in 1..5) {
+                    val deferred = async { performTask("Task $i"); };
+                    deferredList.add(deferred);
+                };
+
+                // 예외가 발생하더라도 계속 진행하기 위해 awaitAll 대신 Deferred들을 수동으로 기다림
+                val results = mutableListOf<Int>();
+                for (deferred in deferredList) {
+                    try {
+                        results.add(deferred.await());
+                    } catch (e: Exception) {
+                        println("작업 실패: ${e.message}");
+                    };
+                };
+                results;
+            };
+
+            println("작업 결과: $result");
+        };
+
+        delay(2500); // 일정 시간이 지난 후 작업 취소
+        job.cancelAndJoin(); // 작업 취소
     };
 };
 
